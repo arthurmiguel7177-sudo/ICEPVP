@@ -205,16 +205,23 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [recruitEmbed], components: [row] });
         }
 
-        // COMANDO: /staf (Utilizando busca por ID direto e por nome como fallback)
+        // COMANDO: /staf
         if (commandName === 'staf') {
             try {
                 await interaction.deferReply();
                 await guild.members.fetch();
 
-                const getMembersByIdOrName = (roleId, roleName) => {
-                    const role = guild.roles.cache.get(roleId) || guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
-                    if (!role) return "*(Cargo não configurado)*";
-                    
+                const getMembersByRoleName = (roleName) => {
+                    const role = guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
+                    if (!role) return "*(Cargo não encontrado)*";
+                    const members = role.members.map(m => `<@${m.user.id}>`);
+                    return members.length > 0 ? members.join(', ') : "*(Nenhum membro)*";
+                };
+
+                const getMembersById = (roleId) => {
+                    if (!roleId) return "*(Não configurado)*";
+                    const role = guild.roles.cache.get(roleId);
+                    if (!role) return "*(Cargo não encontrado)*";
                     const members = role.members.map(m => `<@${m.user.id}>`);
                     return members.length > 0 ? members.join(', ') : "*(Nenhum membro)*";
                 };
@@ -223,81 +230,92 @@ client.on('interactionCreate', async (interaction) => {
                     .setTitle("👑 EQUIPE DE STAFF — ICE PVP")
                     .setColor(CONFIG.embedColor)
                     .addFields(
-                        { name: "👑 Owners", value: getMembersByIdOrName("", "Owners"), inline: false },
-                        { name: "🛡️ Co-Owner", value: getMembersByIdOrName("", "Co-Owner"), inline: false },
-                        { name: "⭐ Admins", value: getMembersByIdOrName("", "Admins"), inline: false },
-                        { name: "📊 Manager", value: getMembersByIdOrName(CONFIG.managerRoleId, "Maneger"), inline: false },
-                        { name: "⚡ Staff", value: getMembersByIdOrName(CONFIG.staffRoleId, "Staf"), inline: false },
-                        { name: "🤝 Helper", value: getMembersByIdOrName(CONFIG.helperRoleId, "Helper"), inline: false }
+                        { name: "👑 Owners", value: getMembersByRoleName("Owners"), inline: false },
+                        { name: "🛡️ Co-Owner", value: getMembersByRoleName("Co-Owner"), inline: false },
+                        { name: "⭐ Admins", value: getMembersByRoleName("Admins"), inline: false },
+                        { name: "📊 Manager", value: getMembersById(CONFIG.managerRoleId), inline: false },
+                        { name: "⚡ Staff", value: getMembersById(CONFIG.staffRoleId), inline: false },
+                        { name: "🤝 Helper", value: getMembersById(CONFIG.helperRoleId), inline: false }
                     )
                     .setThumbnail(guild.iconURL({ dynamic: true }))
                     .setTimestamp();
 
                 return await interaction.editReply({ embeds: [staffEmbed] });
             } catch (err) {
-                return interaction.followUp({ content: "❌ Erro ao listar a Staff.", ephemeral: true });
+                console.error(err);
+                return interaction.editReply({ content: "❌ Erro ao listar a Staff." });
             }
         }
 
-        // COMANDO: /equipe (Status da Staff Ativa baseado no ID do cargo Staf)
+        // COMANDO: /equipe
         if (commandName === 'equipe') {
-            await interaction.deferReply();
+            try {
+                await interaction.deferReply();
 
-            const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staf' || r.name.toLowerCase() === 'staff');
+                const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staf' || r.name.toLowerCase() === 'staff');
 
-            if (!role) {
-                return interaction.editReply('O cargo de equipe principal não foi encontrado neste servidor.');
-            }
-
-            await guild.members.fetch();
-            const membrosEquipe = role.members;
-
-            const onlineStaff = [];
-            const offlineStaff = [];
-
-            membrosEquipe.forEach(member => {
-                const status = member.presence?.status;
-                if (status && status !== 'offline') {
-                    onlineStaff.push(`<@${member.id}> (${status})`);
-                } else {
-                    offlineStaff.push(`<@${member.id}>`);
+                if (!role) {
+                    return interaction.editReply('O cargo de equipe principal não foi encontrado neste servidor.');
                 }
-            });
 
-            const embed = new EmbedBuilder()
-                .setTitle('🛡️ Status da Equipe')
-                .setColor(CONFIG.embedColor)
-                .addFields(
-                    { name: `🟢 Ativos (${onlineStaff.length})`, value: onlineStaff.length > 0 ? onlineStaff.join('\n') : 'Ninguém online no momento', inline: false },
-                    { name: `⚪ Offline / Ausentes (${offlineStaff.length})`, value: offlineStaff.length > 0 ? offlineStaff.join('\n') : 'Nenhum', inline: false }
-                )
-                .setTimestamp();
+                await guild.members.fetch();
+                const membrosEquipe = role.members;
 
-            return interaction.editReply({ embeds: [embed] });
+                const onlineStaff = [];
+                const offlineStaff = [];
+
+                membrosEquipe.forEach(member => {
+                    const status = member.presence?.status;
+                    if (status && status !== 'offline') {
+                        onlineStaff.push(`<@${member.id}> (${status})`);
+                    } else {
+                        offlineStaff.push(`<@${member.id}>`);
+                    }
+                });
+
+                const embed = new EmbedBuilder()
+                    .setTitle('🛡️ Status da Equipe')
+                    .setColor(CONFIG.embedColor)
+                    .addFields(
+                        { name: `🟢 Ativos (${onlineStaff.length})`, value: onlineStaff.length > 0 ? onlineStaff.join('\n') : 'Ninguém online no momento', inline: false },
+                        { name: `⚪ Offline / Ausentes (${offlineStaff.length})`, value: offlineStaff.length > 0 ? offlineStaff.join('\n') : 'Nenhum', inline: false }
+                    )
+                    .setTimestamp();
+
+                return interaction.editReply({ embeds: [embed] });
+            } catch (err) {
+                console.error(err);
+                return interaction.editReply({ content: "❌ Erro ao verificar a equipe." });
+            }
         }
 
-        // COMANDO: /vips (Contador e Lista de VIPs usando o ID direto)
+        // COMANDO: /vips
         if (commandName === 'vips') {
-            await interaction.deferReply();
+            try {
+                await interaction.deferReply();
 
-            const roleVip = guild.roles.cache.get(CONFIG.vipRoleId);
+                const roleVip = guild.roles.cache.get(CONFIG.vipRoleId);
 
-            if (!roleVip) {
-                return interaction.editReply('O cargo VIP não foi encontrado neste servidor com este ID.');
+                if (!roleVip) {
+                    return interaction.editReply('O cargo VIP não foi encontrado neste servidor com este ID.');
+                }
+
+                await guild.members.fetch();
+                const membrosVip = roleVip.members;
+
+                const listaVips = membrosVip.map(member => `<@${member.id}>`).join('\n') || 'Nenhum membro com cargo VIP no momento.';
+
+                const embedVip = new EmbedBuilder()
+                    .setTitle('⭐ Membros VIPs')
+                    .setColor('#ffd700')
+                    .setDescription(`Total de membros com o cargo VIP: **${membrosVip.size}**\n\n**Lista:**\n${listaVips}`)
+                    .setTimestamp();
+
+                return interaction.editReply({ embeds: [embedVip] });
+            } catch (err) {
+                console.error(err);
+                return interaction.editReply({ content: "❌ Erro ao listar os VIPs." });
             }
-
-            await guild.members.fetch();
-            const membrosVip = roleVip.members;
-
-            const listaVips = membrosVip.map(member => `<@${member.id}>`).join('\n') || 'Nenhum membro com cargo VIP no momento.';
-
-            const embedVip = new EmbedBuilder()
-                .setTitle('⭐ Membros VIPs')
-                .setColor('#ffd700')
-                .setDescription(`Total de membros com o cargo VIP: **${membrosVip.size}**\n\n**Lista:**\n${listaVips}`)
-                .setTimestamp();
-
-            return interaction.editReply({ embeds: [embedVip] });
         }
 
         // COMANDO: /regras
