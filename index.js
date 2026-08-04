@@ -133,10 +133,11 @@ client.once('ready', async () => {
     console.log(`[STATUS] Bot rodando como: ${client.user.tag}`);
     console.log("==================================================");
 
-    const firstGuild = client.guilds.cache.first();
-    const guildId = firstGuild ? firstGuild.id : null;
+    // REMOVA OU COMENTE ESTAS LINHAS ABAIXO:
+    // const firstGuild = client.guilds.cache.first();
+    // const guildId = firstGuild ? firstGuild.id : null;
+    // await registerSlashCommands(client.user.id, guildId);
 
-    await registerSlashCommands(client.user.id, guildId);
     client.user.setActivity(`🧊 ICE PVP | /regras`, { type: 0 });
 });
 
