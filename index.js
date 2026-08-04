@@ -1,13 +1,13 @@
-//           +-------------------------+
-//         .'                         .'|
-//        +-------------------------+  |
-//        |                         |  |
-//        |         🧊 ICE 🧊       |  |
-//        |         PVP NETWORK     |  |
-//        |                         |  |
-//        |                         | +
-//        |                         |.'
-//        +-------------------------+
+//         +-------------------------+
+//       .'                         .'|
+//      +-------------------------+  |
+//      |                         |  |
+//      |         🧊 ICE 🧊        |  |
+//      |         PVP NETWORK     |  |
+//      |                         |  |
+//      |                         | +
+//      |                         |.'
+//      +-------------------------+
 //
 
 const { 
@@ -146,11 +146,9 @@ client.once('ready', async () => {
 
 client.on('interactionCreate', async (interaction) => {
 
-    // --- A) COMANDOS SLASH ( / ) ---
     if (interaction.isChatInputCommand()) {
         const { commandName, guild } = interaction;
 
-        // COMANDO: /ip
         if (commandName === 'ip') {
             const ipEmbed = new EmbedBuilder()
                 .setTitle("🧊 CONECTE-SE AO ICE PVP")
@@ -166,7 +164,6 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [ipEmbed] });
         }
 
-        // COMANDO: /loja
         if (commandName === 'loja') {
             const storeEmbed = new EmbedBuilder()
                 .setTitle("🛒 LOJA VIP — ICE PVP")
@@ -176,7 +173,6 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [storeEmbed] });
         }
 
-        // COMANDO: /criador
         if (commandName === 'criador') {
             const creatorEmbed = new EmbedBuilder()
                 .setTitle("🛠️ DESENVOLVEDOR / CRIADOR")
@@ -187,7 +183,6 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [creatorEmbed] });
         }
 
-        // COMANDO: /recrutamento
         if (commandName === 'recrutamento') {
             const recruitEmbed = new EmbedBuilder()
                 .setTitle("🏆 RECRUTAMENTO — ICE PVP")
@@ -205,12 +200,9 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [recruitEmbed], components: [row] });
         }
 
-        // COMANDO: /staf
         if (commandName === 'staf') {
+            await interaction.deferReply();
             try {
-                await interaction.deferReply();
-                await guild.members.fetch();
-
                 const getMembersByRoleName = (roleName) => {
                     const role = guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
                     if (!role) return "*(Cargo não encontrado)*";
@@ -247,20 +239,16 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        // COMANDO: /equipe
         if (commandName === 'equipe') {
+            await interaction.deferReply();
             try {
-                await interaction.deferReply();
-
                 const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staf' || r.name.toLowerCase() === 'staff');
 
                 if (!role) {
                     return interaction.editReply('O cargo de equipe principal não foi encontrado neste servidor.');
                 }
 
-                await guild.members.fetch();
                 const membrosEquipe = role.members;
-
                 const onlineStaff = [];
                 const offlineStaff = [];
 
@@ -289,20 +277,16 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        // COMANDO: /vips
         if (commandName === 'vips') {
+            await interaction.deferReply();
             try {
-                await interaction.deferReply();
-
                 const roleVip = guild.roles.cache.get(CONFIG.vipRoleId);
 
                 if (!roleVip) {
                     return interaction.editReply('O cargo VIP não foi encontrado neste servidor com este ID.');
                 }
 
-                await guild.members.fetch();
                 const membrosVip = roleVip.members;
-
                 const listaVips = membrosVip.map(member => `<@${member.id}>`).join('\n') || 'Nenhum membro com cargo VIP no momento.';
 
                 const embedVip = new EmbedBuilder()
@@ -318,7 +302,6 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        // COMANDO: /regras
         if (commandName === 'regras') {
             const rulesEmbed = new EmbedBuilder()
                 .setTitle("📜 REGRAS")
@@ -396,7 +379,6 @@ client.on('interactionCreate', async (interaction) => {
             return interaction.reply({ embeds: [rulesEmbed] });
         }
 
-        // COMANDO: /painelticket
         if (commandName === 'painelticket') {
             const ticketEmbed = new EmbedBuilder()
                 .setTitle("🎫 CENTRAL DE ATENDIMENTO — ICE PVP")
@@ -440,7 +422,6 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // --- B) SELEÇÃO NO MENU DE TICKETS ---
     if (interaction.isStringSelectMenu() && interaction.customId === 'select_ticket_type') {
         const selectedValue = interaction.values[0];
         const { guild, user } = interaction;
@@ -516,7 +497,6 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply({ content: `✅ Ticket criado em: ${ticketChannel}`, ephemeral: true });
     }
 
-    // --- C) BOTÕES E MODALS ---
     if (interaction.isButton()) {
         const { customId, guild, message, user } = interaction;
 
@@ -531,7 +511,6 @@ client.on('interactionCreate', async (interaction) => {
             return abrirModalRecrutamento(interaction);
         }
 
-        // Aprovação e Reprovação de Fichas (Canal de Análise)
         if (customId === 'btn_aceitar_ficha' || customId === 'btn_recusar_ficha') {
             const isAceitar = customId === 'btn_aceitar_ficha';
             const embedOriginal = message.embeds[0];
@@ -556,7 +535,6 @@ client.on('interactionCreate', async (interaction) => {
         }
     }
 
-    // --- D) ENVIO DO MODAL DE RECRUTAMENTO ---
     if (interaction.isModalSubmit() && interaction.customId === 'modal_recrutamento') {
         const nick = interaction.fields.getTextInputValue('nick_minecraft');
         const idade = interaction.fields.getTextInputValue('idade');
@@ -598,7 +576,6 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-// Função auxiliar para exibir o pop-up (Modal) de recrutamento na tela
 async function abrirModalRecrutamento(interaction) {
     const modal = new ModalBuilder()
         .setCustomId('modal_recrutamento')
@@ -643,14 +620,3 @@ async function abrirModalRecrutamento(interaction) {
 }
 
 client.login(process.env.TOKEN || process.env.DISCORD_TOKEN);
-
-//           +-------------------------+
-//         .'                         .'|
-//        +-------------------------+  |
-//        |                         |  |
-//        |         🧊 FIM 🧊        |  |
-//        |         DO CÓDIGO       |  |
-//        |                         |  |
-//        |                         | +
-//        |                         |.'
-//        +-------------------------+
