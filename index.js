@@ -563,16 +563,15 @@ client.on('interactionCreate', async (interaction) => {
                 }
             }
 
-            // CORREÇÃO: Usamos interaction.reply + setTimeout para apagar a mensagem pública de "Ficha Aceita/Recusada" em 5 segundos, evitando poluição.
-            await interaction.reply({ embeds: [updatedEmbed], ephemeral: false });
-            const replyMessage = await interaction.fetchReply();
+            // Atualiza a mensagem na hora para remover os botões e mostrar o status
+            await interaction.update({ embeds: [updatedEmbed], components: [] });
+
+            // Deleta essa mensagem do canal de análise após 5 segundos
             setTimeout(() => {
-                replyMessage.delete().catch(() => {});
+                message.delete().catch(() => {});
             }, 5000);
 
-            // Deleta a mensagem com os botões no canal de análise para limpar
-            await message.delete().catch(() => {});
-
+            // Envia a cópia para o canal de resultados fixo
             const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
             if (canalResultados) {
                 await canalResultados.send({ embeds: [updatedEmbed] }).catch(() => {});
