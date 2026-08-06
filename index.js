@@ -149,8 +149,21 @@ client.on('interactionCreate', async (interaction) => {
             const recruitEmbed = new EmbedBuilder()
                 .setTitle("Recruitment Process – ICE PVP Team")
                 .setColor(CONFIG.embedColor)
-                .setDescription("You are starting your application for the **ICE PVP** staff team. Click below to apply via DM.")
-                .setImage(guild.iconURL({ dynamic: true }));
+                .setDescription(
+                    "**Welcome!**\n" +
+                    "You are starting your application for the **ICE PVP** staff team. Please read the instructions carefully before proceeding.\n\n" +
+                    "**Important Guidelines**\n" +
+                    "• The review process may take up to **7 business days**.\n" +
+                    "• Approved candidates will be contacted via **Discord** (keep your DMs open).\n" +
+                    "• We never ask for **passwords, files, or any kind of sensitive information**.\n\n" +
+                    "**Basic Requirements**\n" +
+                    "• Good communication and writing skills\n" +
+                    "• Respectful attitude both inside and outside the server\n" +
+                    "• Appropriate behavior with the community\n" +
+                    "• Commitment to the team\n\n" +
+                    "📨 Good luck with your application!"
+                )
+                .setImage("https://media.discordapp.net/attachments/1187483758362628178/1200000000000000000/ice_cube.png"); // Ou utilize a URL da imagem desejada para o cubo
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
