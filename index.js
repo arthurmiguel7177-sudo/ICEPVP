@@ -45,7 +45,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.DirectMessages
     ]
 });
 
@@ -61,8 +62,8 @@ const CONFIG = {
     criadorId: "1455673414470729893"
 };
 
-// Armazenamento temporário para o questionário de recrutamento no chat privado
-const recrutamentoSessoes = new Map();
+// Armazenamento temporário para as sessões de recrutamento na DM
+const recrutamentoDMSessoes = new Map();
 
 // ==============================================================================
 // 🧊 1. REGISTRO DE SLASH COMMANDS 🧊
@@ -183,12 +184,12 @@ client.on('interactionCreate', async (interaction) => {
             const recruitEmbed = new EmbedBuilder()
                 .setTitle("🏆 RECRUTAMENTO — ICE PVP")
                 .setColor(CONFIG.embedColor)
-                .setDescription("Clique no botão abaixo para iniciar o seu recrutamento em um canal privado!");
+                .setDescription("Clique no botão abaixo para iniciar o seu formulário na sua **DM (Mensagem Privada)**!");
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setCustomId('btn_iniciar_recrutamento_privado')
-                    .setLabel('Iniciar Ficha Privada')
+                    .setCustomId('btn_iniciar_recrutamento_dm')
+                    .setLabel('Fazer Ficha na DM')
                     .setStyle(ButtonStyle.Primary)
                     .setEmoji('📝')
             );
@@ -382,7 +383,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setDescription(
                     "Selecione no menu abaixo o **tipo de atendimento** que você precisa:\n\n" +
                     "🛠️ **Suporte Geral (Privado):** Dúvidas, denúncias e auxílio privado.\n" +
-                    "🏆 **Entrar na Equipe (Recrutamento):** Inicia sua ficha em canal privado!\n" +
+                    "🏆 **Entrar na Equipe (Recrutamento):** Inicia sua ficha na DM!\n" +
                     "💬 **Atendimento / Dúvida Pública:** Canal aberto para a comunidade interagir."
                 )
                 .setFooter({ text: "ICE PVP — Selecione uma opção abaixo" });
@@ -400,7 +401,7 @@ client.on('interactionCreate', async (interaction) => {
                         },
                         {
                             label: 'Entrar na Equipe (Recrutamento)',
-                            description: 'Inicia o formulário privado de Staff.',
+                            description: 'Inicia o formulário de Staff na DM.',
                             value: 'equipe_publico',
                             emoji: '🏆'
                         },
@@ -423,7 +424,7 @@ client.on('interactionCreate', async (interaction) => {
         const { guild, user } = interaction;
 
         if (selectedValue === 'equipe_publico') {
-            return criarCanalRecrutamento(guild, user, interaction);
+            return iniciarRecrutamentoDM(guild, user, interaction);
         }
 
         const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -503,8 +504,8 @@ client.on('interactionCreate', async (interaction) => {
             }, 5000);
         }
 
-        if (customId === 'btn_iniciar_recrutamento_privado') {
-            return criarCanalRecrutamento(guild, user, interaction);
+        if (customId === 'btn_iniciar_recrutamento_dm') {
+            return iniciarRecrutamentoDM(guild, user, interaction);
         }
 
         if (customId === 'btn_aceitar_ficha' || customId === 'btn_recusar_ficha') {
@@ -533,56 +534,51 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // ==============================================================================
-// 🧊 4. SISTEMA DE RECRUTAMENTO VIA CANAL PRIVADO 🧊
+// 🧊 4. SISTEMA DE RECRUTAMENTO VIA DM (MENSAGEM PRIVADA) 🧊
 // ==============================================================================
 
-async function criarCanalRecrutamento(guild, user, interaction) {
-    const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const channelName = `recrutamento-${cleanUsername}`;
-
-    const existingChannel = guild.channels.cache.find(c => c.name === channelName);
-    if (existingChannel) {
-        return interaction.reply({ content: `⚠️ Você já possui um canal de recrutamento aberto em: ${existingChannel}`, ephemeral: true });
+async function iniciarRecrutamentoDM(guild, user, interaction) {
+    if (recrutamentoDMSessoes.has(user.id)) {
+        return interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas com o bot!`, ephemeral: true });
     }
 
-    const permissionOverwrites = [
-        { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-        { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] },
-        { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] }
-    ];
+    try {
+        // Tenta enviar a primeira mensagem na DM do usuário
+        const dmChannel = await user.createDM();
+        
+        recrutamentoDMSessoes.set(user.id, {
+            passo: 1,
+            nick: '',
+            idade: '',
+            cargo: '',
+            motivo: '',
+            guildId: guild.id
+        });
 
-    const recChannel = await guild.channels.create({
-        name: channelName,
-        type: ChannelType.GuildText,
-        permissionOverwrites: permissionOverwrites
-    });
+        const inicioEmbed = new EmbedBuilder()
+            .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO (DM)")
+            .setColor(CONFIG.embedColor)
+            .setDescription(`Olá! Você iniciou o recrutamento para o servidor **${guild.name}**.\n\n**Pergunta 1/4:**\nQual o seu **nick no Minecraft**? *(Responda aqui no chat privado)*`);
 
-    recrutamentoSessoes.set(user.id, {
-        passo: 1,
-        nick: '',
-        idade: '',
-        cargo: '',
-        motivo: '',
-        channelId: recChannel.id
-    });
+        await dmChannel.send({ embeds: [inicioEmbed] });
 
-    const inicioEmbed = new EmbedBuilder()
-        .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO (PRIVADO)")
-        .setColor(CONFIG.embedColor)
-        .setDescription(`Olá <@${user.id}>! Este canal é exclusivo para a sua ficha.\n\n**Pergunta 1/4:**\nQual o seu **nick no Minecraft**? *(Responda enviando mensagem aqui)*`);
-
-    await recChannel.send({ content: `<@${user.id}>`, embeds: [inicioEmbed] });
-    return interaction.reply({ content: `✅ Canal privado de recrutamento criado: ${recChannel}`, ephemeral: true });
+        return interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas com o bot.`, ephemeral: true });
+    } catch (error) {
+        console.error("Erro ao enviar DM:", error);
+        return interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas (DM) estão abertas para membros do servidor!`, ephemeral: true });
+    }
 }
 
-// Ouvinte separado para processar as mensagens do chat privado de recrutamento
+// Ouvinte para processar as respostas que o usuário mandar na DM do Bot
 client.on('messageCreate', async (message) => {
-    if (message.author.bot || !message.guild) return;
+    // Apenas mensagens em DM que não sejam de bots
+    if (message.author.bot || message.guild) return;
 
-    const session = recrutamentoSessoes.get(message.author.id);
-    if (!session || message.channel.id !== session.channelId) return;
+    const session = recrutamentoDMSessoes.get(message.author.id);
+    if (!session) return;
 
     const resposta = message.content;
+    const guild = client.guilds.cache.get(session.guildId);
 
     if (session.passo === 1) {
         session.nick = resposta;
@@ -617,50 +613,47 @@ client.on('messageCreate', async (message) => {
     if (session.passo === 4) {
         session.motivo = resposta;
         
-        // Finaliza e envia para a Staff
-        const fichaEmbed = new EmbedBuilder()
-            .setTitle("📋 NOVA FICHA DE RECRUTAMENTO")
-            .setColor(CONFIG.embedColor)
-            .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
-            .addFields(
-                { name: "👤 Candidato", value: `<@${message.author.id}> (${message.author.tag})`, inline: false },
-                { name: "⛏️ Nick no Minecraft", value: session.nick, inline: true },
-                { name: "📅 Idade", value: session.idade, inline: true },
-                { name: "🛡️ Cargo Desejado", value: session.cargo, inline: true },
-                { name: "💬 Por que escolher?", value: session.motivo, inline: false }
-            )
-            .setTimestamp();
+        if (guild) {
+            const fichaEmbed = new EmbedBuilder()
+                .setTitle("📋 NOVA FICHA DE RECRUTAMENTO (VIA DM)")
+                .setColor(CONFIG.embedColor)
+                .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+                .addFields(
+                    { name: "👤 Candidato", value: `<@${message.author.id}> (${message.author.tag})`, inline: false },
+                    { name: "⛏️ Nick no Minecraft", value: session.nick, inline: true },
+                    { name: "📅 Idade", value: session.idade, inline: true },
+                    { name: "🛡️ Cargo Desejado", value: session.cargo, inline: true },
+                    { name: "💬 Por que escolher?", value: session.motivo, inline: false }
+                )
+                .setTimestamp();
 
-        const botoesAnalise = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('btn_aceitar_ficha')
-                .setLabel('Aceitar')
-                .setStyle(ButtonStyle.Success)
-                .setEmoji('✅'),
-            new ButtonBuilder()
-                .setCustomId('btn_recusar_ficha')
-                .setLabel('Recusar')
-                .setStyle(ButtonStyle.Danger)
-                .setEmoji('❌')
-        );
+            const botoesAnalise = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('btn_aceitar_ficha')
+                    .setLabel('Aceitar')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('✅'),
+                new ButtonBuilder()
+                    .setCustomId('btn_recusar_ficha')
+                    .setLabel('Recusar')
+                    .setStyle(ButtonStyle.Danger)
+                    .setEmoji('❌')
+            );
 
-        const canalAnalise = message.guild.channels.cache.get(CONFIG.canalAnaliseId);
-        if (canalAnalise) {
-            await canalAnalise.send({ embeds: [fichaEmbed], components: [botoesAnalise] });
+            const canalAnalise = guild.channels.cache.get(CONFIG.canalAnaliseId);
+            if (canalAnalise) {
+                await canalAnalise.send({ embeds: [fichaEmbed], components: [botoesAnalise] });
+            }
         }
 
         const fimEmbed = new EmbedBuilder()
             .setTitle("✅ FICHA ENVIADA COM SUCESSO!")
             .setColor("#2ecc71")
-            .setDescription("Suas respostas foram enviadas para a análise da staff.\nEste canal será fechado automaticamente em **5 segundos**.");
+            .setDescription("Suas respostas foram enviadas para a análise da staff do servidor. Obrigado por participar!");
 
         await message.channel.send({ embeds: [fimEmbed] });
 
-        recrutamentoSessoes.delete(message.author.id);
-
-        setTimeout(() => {
-            message.channel.delete().catch(() => {});
-        }, 5000);
+        recrutamentoDMSessoes.delete(message.author.id);
     }
 });
 
