@@ -27,7 +27,6 @@ const {
 const express = require('express');
 require('dotenv').config();
 
-// Servidor Web para manter o bot acordado no Render / UptimeRobot
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -59,10 +58,10 @@ const CONFIG = {
     staffRoleId: "1522329690658836541",
     canalAnaliseId: "1533565153872838846",
     canalResultadosId: "1533563483726151724",
+    canalStaffLogsId: "1530603441221800146",
     criadorId: "1455673414470729893"
 };
 
-// Armazenamento temporário para as sessões de recrutamento na DM
 const recrutamentoDMSessoes = new Map();
 
 // ==============================================================================
@@ -70,38 +69,14 @@ const recrutamentoDMSessoes = new Map();
 // ==============================================================================
 
 const commands = [
-    new SlashCommandBuilder()
-        .setName('regras')
-        .setDescription('Exibe o regulamento completo do servidor ICE PVP'),
-
-    new SlashCommandBuilder()
-        .setName('staf')
-        .setDescription('Exibe a lista de membros da Staff do servidor'),
-
-    new SlashCommandBuilder()
-        .setName('equipe')
-        .setDescription('Mostra os membros da equipe e quem está ativo no momento'),
-
-    new SlashCommandBuilder()
-        .setName('vips')
-        .setDescription('Mostra a quantidade e a lista de membros com o cargo VIP'),
-
-    new SlashCommandBuilder()
-        .setName('ip')
-        .setDescription('Mostra o IP oficial do ICE PVP'),
-
-    new SlashCommandBuilder()
-        .setName('loja')
-        .setDescription('Informações sobre a loja de VIPs do servidor'),
-
-    new SlashCommandBuilder()
-        .setName('recrutamento')
-        .setDescription('Envia o painel de recrutamento da equipe'),
-
-    new SlashCommandBuilder()
-        .setName('criador')
-        .setDescription('Mostra o criador e desenvolvedor deste bot'),
-
+    new SlashCommandBuilder().setName('regras').setDescription('Exibe o regulamento completo do servidor ICE PVP'),
+    new SlashCommandBuilder().setName('staf').setDescription('Exibe a lista de membros da Staff do servidor'),
+    new SlashCommandBuilder().setName('equipe').setDescription('Mostra os membros da equipe e quem está ativo no momento'),
+    new SlashCommandBuilder().setName('vips').setDescription('Mostra a quantidade e a lista de membros com o cargo VIP'),
+    new SlashCommandBuilder().setName('ip').setDescription('Mostra o IP oficial do ICE PVP'),
+    new SlashCommandBuilder().setName('loja').setDescription('Informações sobre a loja de VIPs do servidor'),
+    new SlashCommandBuilder().setName('recrutamento').setDescription('Envia o painel de recrutamento da equipe'),
+    new SlashCommandBuilder().setName('criador').setDescription('Mostra o criador e desenvolvedor deste bot'),
     new SlashCommandBuilder()
         .setName('painelticket')
         .setDescription('Envia o painel interativo de suporte (Apenas Admins)')
@@ -111,7 +86,6 @@ const commands = [
 async function registerSlashCommands(clientId, guildId) {
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN || process.env.DISCORD_TOKEN);
     try {
-        console.log('[SLASH] Sincronizando comandos no servidor...');
         if (guildId) {
             await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
         }
@@ -151,13 +125,7 @@ client.on('interactionCreate', async (interaction) => {
                 .setTitle("🧊 CONECTE-SE AO ICE PVP")
                 .setColor(CONFIG.embedColor)
                 .setDescription("Entre agora mesmo no nosso servidor!")
-                .addFields(
-                    { name: "🌐 IP do Servidor", value: `\`${CONFIG.serverIP}\``, inline: false },
-                    { name: "⚡ Versão Recomendada", value: "`1.8.x `", inline: true }
-                )
-                .setFooter({ text: "ICE PVP Network" })
-                .setTimestamp();
-
+                .addFields({ name: "🌐 IP do Servidor", value: `\`${CONFIG.serverIP}\``, inline: false });
             return interaction.reply({ embeds: [ipEmbed] });
         }
 
@@ -165,8 +133,7 @@ client.on('interactionCreate', async (interaction) => {
             const storeEmbed = new EmbedBuilder()
                 .setTitle("🛒 LOJA VIP — ICE PVP")
                 .setColor("#f1c40f")
-                .setDescription("🚧 **Loja em Desenvolvimento!**\n\nEm breve você poderá adquirir VIPs e vantagens exclusivas!");
-
+                .setDescription("🚧 **Loja em Desenvolvimento!**");
             return interaction.reply({ embeds: [storeEmbed] });
         }
 
@@ -174,9 +141,7 @@ client.on('interactionCreate', async (interaction) => {
             const creatorEmbed = new EmbedBuilder()
                 .setTitle("🛠️ DESENVOLVEDOR / CRIADOR")
                 .setColor(CONFIG.embedColor)
-                .setDescription(`Este bot foi programado e desenvolvido exclusivamente por <@${CONFIG.criadorId}>!`)
-                .setTimestamp();
-
+                .setDescription(`Este bot foi programado e desenvolvido exclusivamente por <@${CONFIG.criadorId}>!`);
             return interaction.reply({ embeds: [creatorEmbed] });
         }
 
@@ -184,20 +149,7 @@ client.on('interactionCreate', async (interaction) => {
             const recruitEmbed = new EmbedBuilder()
                 .setTitle("Recruitment Process – ICE PVP Team")
                 .setColor(CONFIG.embedColor)
-                .setDescription(
-                    "**Welcome!**\n" +
-                    "You are starting your application for the **ICE PVP** staff team. Please read the instructions carefully before proceeding.\n\n" +
-                    "**Important Guidelines**\n" +
-                    "• The review process may take up to **7 business days**.\n" +
-                    "• Approved candidates will be contacted via **Discord** (keep your DMs open).\n" +
-                    "• We never ask for **passwords, files, or any kind of sensitive information**.\n\n" +
-                    "**Basic Requirements**\n" +
-                    "• Good communication and writing skills\n" +
-                    "• Respectful attitude both inside and outside the server\n" +
-                    "• Appropriate behavior with the community\n" +
-                    "• Commitment to the team\n\n" +
-                    "📨 Good luck with your application!"
-                )
+                .setDescription("You are starting your application for the **ICE PVP** staff team. Click below to apply via DM.")
                 .setImage(guild.iconURL({ dynamic: true }));
 
             const row = new ActionRowBuilder().addComponents(
@@ -206,7 +158,6 @@ client.on('interactionCreate', async (interaction) => {
                     .setLabel('Submit Application')
                     .setStyle(ButtonStyle.Primary)
             );
-
             return interaction.reply({ embeds: [recruitEmbed], components: [row] });
         }
 
@@ -220,101 +171,60 @@ client.on('interactionCreate', async (interaction) => {
                     return members.length > 0 ? members.join(', ') : "*(Nenhum membro)*";
                 };
 
-                const getMembersById = (roleId) => {
-                    if (!roleId) return "*(Não configurado)*";
-                    const role = guild.roles.cache.get(roleId);
-                    if (!role) return "*(Cargo não encontrado)*";
-                    const members = role.members.map(m => `<@${m.user.id}>`);
-                    return members.length > 0 ? members.join(', ') : "*(Nenhum membro)*";
-                };
-
                 const staffEmbed = new EmbedBuilder()
                     .setTitle("👑 EQUIPE DE STAFF — ICE PVP")
                     .setColor(CONFIG.embedColor)
                     .addFields(
                         { name: "👑 Owners", value: getMembersByRoleName("Owners"), inline: false },
                         { name: "🛡️ Co-Owner", value: getMembersByRoleName("Co-Owner"), inline: false },
-                        { name: "⭐ Admins", value: getMembersByRoleName("Admins"), inline: false },
-                        { name: "📊 Manager", value: getMembersById(CONFIG.managerRoleId), inline: false },
-                        { name: "⚡ Staff", value: getMembersById(CONFIG.staffRoleId), inline: false },
-                        { name: "🤝 Helper", value: getMembersById(CONFIG.helperRoleId), inline: false }
-                    )
-                    .setThumbnail(guild.iconURL({ dynamic: true }))
-                    .setTimestamp();
-
+                        { name: "⭐ Admins", value: getMembersByRoleName("Admins"), inline: false }
+                    );
                 return await interaction.editReply({ embeds: [staffEmbed] });
             } catch (err) {
-                console.error(err);
                 return interaction.editReply({ content: "❌ Erro ao listar a Staff." });
             }
         }
 
         if (commandName === 'equipe') {
             await interaction.deferReply();
-            try {
-                const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staf' || r.name.toLowerCase() === 'staff');
+            const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staff');
+            if (!role) return interaction.editReply('Cargo não encontrado.');
 
-                if (!role) {
-                    return interaction.editReply('O cargo de equipe principal não foi encontrado neste servidor.');
+            const onlineStaff = [];
+            const offlineStaff = [];
+            role.members.forEach(member => {
+                if (member.presence?.status && member.presence.status !== 'offline') {
+                    onlineStaff.push(`<@${member.id}>`);
+                } else {
+                    offlineStaff.push(`<@${member.id}>`);
                 }
+            });
 
-                const membrosEquipe = role.members;
-                const onlineStaff = [];
-                const offlineStaff = [];
-
-                membrosEquipe.forEach(member => {
-                    const status = member.presence?.status;
-                    if (status && status !== 'offline') {
-                        onlineStaff.push(`<@${member.id}> (${status})`);
-                    } else {
-                        offlineStaff.push(`<@${member.id}>`);
-                    }
-                });
-
-                const embed = new EmbedBuilder()
-                    .setTitle('🛡️ Status da Equipe')
-                    .setColor(CONFIG.embedColor)
-                    .addFields(
-                        { name: `🟢 Ativos (${onlineStaff.length})`, value: onlineStaff.length > 0 ? onlineStaff.join('\n') : 'Ninguém online no momento', inline: false },
-                        { name: `⚪ Offline / Ausentes (${offlineStaff.length})`, value: offlineStaff.length > 0 ? offlineStaff.join('\n') : 'Nenhum', inline: false }
-                    )
-                    .setTimestamp();
-
-                return interaction.editReply({ embeds: [embed] });
-            } catch (err) {
-                console.error(err);
-                return interaction.editReply({ content: "❌ Erro ao verificar a equipe." });
-            }
+            const embed = new EmbedBuilder()
+                .setTitle('🛡️ Status da Equipe')
+                .setColor(CONFIG.embedColor)
+                .addFields(
+                    { name: `🟢 Ativos (${onlineStaff.length})`, value: onlineStaff.length > 0 ? onlineStaff.join('\n') : 'Ninguém online', inline: false },
+                    { name: `⚪ Offline (${offlineStaff.length})`, value: offlineStaff.length > 0 ? offlineStaff.join('\n') : 'Nenhum', inline: false }
+                );
+            return interaction.editReply({ embeds: [embed] });
         }
 
         if (commandName === 'vips') {
             await interaction.deferReply();
-            try {
-                const roleVip = guild.roles.cache.get(CONFIG.vipRoleId);
-
-                if (!roleVip) {
-                    return interaction.editReply('O cargo VIP não foi encontrado neste servidor com este ID.');
-                }
-
-                const membrosVip = roleVip.members;
-                const listaVips = membrosVip.map(member => `<@${member.id}>`).join('\n') || 'Nenhum membro com cargo VIP no momento.';
-
-                const embedVip = new EmbedBuilder()
-                    .setTitle('⭐ Membros VIPs')
-                    .setColor('#ffd700')
-                    .setDescription(`Total de membros com o cargo VIP: **${membrosVip.size}**\n\n**Lista:**\n${listaVips}`)
-                    .setTimestamp();
-
-                return interaction.editReply({ embeds: [embedVip] });
-            } catch (err) {
-                console.error(err);
-                return interaction.editReply({ content: "❌ Erro ao listar os VIPs." });
-            }
+            const roleVip = guild.roles.cache.get(CONFIG.vipRoleId);
+            if (!roleVip) return interaction.editReply('Cargo VIP não encontrado.');
+            const listaVips = roleVip.members.map(m => `<@${m.id}>`).join('\n') || 'Nenhum VIP.';
+            const embedVip = new EmbedBuilder()
+                .setTitle('⭐ Membros VIPs')
+                .setColor('#ffd700')
+                .setDescription(`Total: **${roleVip.members.size}**\n\n${listaVips}`);
+            return interaction.editReply({ embeds: [embedVip] });
         }
 
         if (commandName === 'regras') {
             const rulesEmbed = new EmbedBuilder()
-                .setTitle("📜 REGRAS")
+                .setTitle("📜 REGRAS — ICE PVP")
                 .setColor(CONFIG.embedColor)
                 .setDescription("> *To maintain a fair, competitive and enjoyable environment, all players must follow the rules below.*\n\u200b")
                 .addFields(
@@ -393,41 +303,20 @@ client.on('interactionCreate', async (interaction) => {
             const ticketEmbed = new EmbedBuilder()
                 .setTitle("🎫 CENTRAL DE ATENDIMENTO — ICE PVP")
                 .setColor(CONFIG.embedColor)
-                .setDescription(
-                    "Selecione no menu abaixo o **tipo de atendimento** que você precisa:\n\n" +
-                    "🛠️ **Suporte Geral (Privado):** Dúvidas, denúncias e auxílio privado.\n" +
-                    "🏆 **Entrar na Equipe (Recrutamento):** Inicia sua ficha na DM!\n" +
-                    "💬 **Atendimento / Dúvida Pública:** Canal aberto para a comunidade interagir."
-                )
-                .setFooter({ text: "ICE PVP — Selecione uma opção abaixo" });
+                .setDescription("Selecione abaixo o tipo de atendimento:");
 
             const selectMenu = new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId('select_ticket_type')
-                    .setPlaceholder('Clique aqui e escolha a categoria...')
+                    .setPlaceholder('Escolha uma categoria...')
                     .addOptions([
-                        {
-                            label: 'Suporte Geral & Dúvidas',
-                            description: 'Ticket Privado para tratar de bugs ou conta.',
-                            value: 'suporte_privado',
-                            emoji: '🛠️'
-                        },
-                        {
-                            label: 'Entrar na Equipe (Recrutamento)',
-                            description: 'Inicia o formulário de Staff na DM.',
-                            value: 'equipe_publico',
-                            emoji: '🏆'
-                        },
-                        {
-                            label: 'Atendimento Público',
-                            description: 'Ticket Aberto/Público geral.',
-                            value: 'suporte_publico',
-                            emoji: '💬'
-                        }
+                        { label: 'Suporte Geral & Dúvidas', value: 'suporte_privado', emoji: '🛠️' },
+                        { label: 'Entrar na Equipe (Recrutamento)', value: 'equipe_publico', emoji: '🏆' },
+                        { label: 'Atendimento Público', value: 'suporte_publico', emoji: '💬' }
                     ])
             );
 
-            await interaction.reply({ content: "✅ Painel enviado com sucesso!", ephemeral: true });
+            await interaction.reply({ content: "✅ Painel enviado!", ephemeral: true });
             return interaction.channel.send({ embeds: [ticketEmbed], components: [selectMenu] });
         }
     }
@@ -439,82 +328,13 @@ client.on('interactionCreate', async (interaction) => {
         if (selectedValue === 'equipe_publico') {
             return iniciarRecrutamentoDM(guild, user, interaction);
         }
-
-        const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9]/g, '');
-        let prefix = "ticket";
-        let isPrivate = true;
-        let categoryTitle = "";
-
-        if (selectedValue === 'suporte_privado') {
-            prefix = "privado";
-            isPrivate = true;
-            categoryTitle = "🛠️ Suporte Geral (Privado)";
-        } else if (selectedValue === 'suporte_publico') {
-            prefix = "publico";
-            isPrivate = false;
-            categoryTitle = "💬 Atendimento Público";
-        }
-
-        const channelName = `${prefix}-${cleanUsername}`;
-
-        const existingChannel = guild.channels.cache.find(c => c.name === channelName);
-        if (existingChannel) {
-            return interaction.reply({ content: `⚠️ Você já possui um ticket desse tipo aberto em: ${existingChannel}`, ephemeral: true });
-        }
-
-        let permissionOverwrites = [];
-
-        if (isPrivate) {
-            permissionOverwrites = [
-                { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] },
-                { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] }
-            ];
-        } else {
-            permissionOverwrites = [
-                { id: guild.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] },
-                { id: client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] }
-            ];
-        }
-
-        const ticketChannel = await guild.channels.create({
-            name: channelName,
-            type: ChannelType.GuildText,
-            permissionOverwrites: permissionOverwrites
-        });
-
-        const welcomeEmbed = new EmbedBuilder()
-            .setTitle(categoryTitle)
-            .setColor(CONFIG.embedColor)
-            .setDescription(
-                `Olá <@${user.id}>!\n\n` +
-                `• **Visibilidade:** ${isPrivate ? "🔒 Privado" : "🌐 Público (Todos do servidor enxergam)"}\n` +
-                `• **Solicitante:** <@${user.id}>\n\n` +
-                "Explique seu problema para a equipe lhe atender."
-            )
-            .setFooter({ text: "Clique no botão abaixo para fechar este ticket." });
-
-        const closeBtn = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('btn_close_ticket')
-                .setLabel('Fechar Ticket')
-                .setEmoji('🔒')
-                .setStyle(ButtonStyle.Danger)
-        );
-
-        await ticketChannel.send({ content: `<@${user.id}>`, embeds: [welcomeEmbed], components: [closeBtn] });
-        return interaction.reply({ content: `✅ Ticket criado em: ${ticketChannel}`, ephemeral: true });
     }
 
     if (interaction.isButton()) {
         const { customId, guild, message, user } = interaction;
 
         if (customId === 'btn_close_ticket') {
-            await interaction.reply({ content: "🔒 Canal sendo fechado em **5 segundos**..." });
-            setTimeout(() => {
-                interaction.channel.delete().catch(() => {});
-            }, 5000);
+            await interaction.reply({ content: "🔒 Este canal será gerenciado pela equipe." });
         }
 
         if (customId === 'btn_iniciar_recrutamento_dm') {
@@ -526,115 +346,91 @@ client.on('interactionCreate', async (interaction) => {
             const embedOriginal = message.embeds[0];
 
             if (!embedOriginal) {
-                return interaction.reply({ content: '❌ Erro ao localizar os dados da ficha.', ephemeral: true });
+                return interaction.reply({ content: '❌ Erro ao localizar dados.', ephemeral: true });
+            }
+
+            const campoNick = embedOriginal.fields.find(f => f.name.includes("Nick"));
+            const mcNick = campoNick ? campoNick.value.trim() : "Steve";
+
+            const campoCargo = embedOriginal.fields.find(f => f.name.includes("Cargo"));
+            const cargoDesejado = campoCargo ? campoCargo.value.trim() : "Staff";
+
+            const campoCandidato = embedOriginal.fields.find(f => f.name.includes("Candidato"));
+            let candidatoId = null;
+            if (campoCandidato) {
+                const matchId = campoCandidato.value.match(/<@!?(\d+)>/);
+                if (matchId) candidatoId = matchId[1];
             }
 
             const updatedEmbed = EmbedBuilder.from(embedOriginal)
                 .setColor(isAceitar ? '#2ecc71' : '#e74c3c')
                 .addFields({ 
-                    name: "📌 Status / Status", 
-                    value: `${isAceitar ? '✅ Aceito / Accepted' : '❌ Recusado / Denied'} por <@${user.id}>` 
+                    name: "📌 Status", 
+                    value: `${isAceitar ? '✅ Aceito' : '❌ Recusado'} por <@${user.id}>` 
                 });
 
-            // Extrai o ID do candidato da própria ficha enviada no canal de análise
-            const campoCandidato = embedOriginal.fields.find(f => f.name.includes("Candidato"));
-            if (campoCandidato) {
-                const matchId = campoCandidato.value.match(/<@!?(\d+)>/);
-                if (matchId) {
-                    const candidatoId = matchId[1];
-                    try {
-                        const candidatoUser = await client.users.fetch(candidatoId);
-                        const dmCandidato = await candidatoUser.createDM();
-                        
-                        const dmResultadoEmbed = new EmbedBuilder()
-                            .setTitle(isAceitar ? "🎉 FICHA APROVADA! / APPLICATION ACCEPTED!" : "❌ FICHA RECUSADA / APPLICATION DENIED")
-                            .setColor(isAceitar ? '#2ecc71' : '#e74c3c')
-                            .setDescription(
-                                isAceitar 
-                                ? `Parabéns! Sua ficha de recrutamento para o **${guild.name}** foi **ACEITA** por <@${user.id}>!\n*Congratulations! Your application for **${guild.name}** has been **ACCEPTED**!*`
-                                : `Olá. Infelizmente sua ficha de recrutamento para o **${guild.name}** foi **RECUSADA** por <@${user.id}>.\n*Hello. Unfortunately your application for **${guild.name}** has been **DENIED**.*`
-                            )
-                            .setTimestamp();
-
-                        await dmCandidato.send({ embeds: [dmResultadoEmbed] });
-                    } catch (err) {
-                        console.log("Não foi possível enviar a DM do resultado para o candidato (DM fechada).");
-                    }
-                }
+            if (candidatoId) {
+                try {
+                    const candidatoUser = await client.users.fetch(candidatoId);
+                    const dmCandidato = await candidatoUser.createDM();
+                    const dmResultadoEmbed = new EmbedBuilder()
+                        .setTitle(isAceitar ? "🎉 FICHA APROVADA!" : "❌ FICHA RECUSADA")
+                        .setColor(isAceitar ? '#2ecc71' : '#e74c3c')
+                        .setDescription(isAceitar ? `Sua ficha foi **ACEITA**!` : `Sua ficha foi **RECUSADA**.`);
+                    await dmCandidato.send({ embeds: [dmResultadoEmbed] });
+                } catch (e) {}
             }
 
-            // Atualiza a mensagem na interface para tirar os botões e mostrar o veredito
             await interaction.update({ embeds: [updatedEmbed], components: [] });
 
-            // Envia a cópia oficial para o canal de resultados fixo
-            const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
-            if (canalResultados) {
-                await canalResultados.send({ embeds: [updatedEmbed] }).catch(() => {});
-            }
+            if (isAceitar) {
+                const avatarUrl = `https://minotar.net/helm/${encodeURIComponent(mcNick)}/100.png`;
 
-            // Pega a mensagem atualizada do canal de análise e apaga após 5 segundos reais
-            const mensagemCanal = await interaction.channel.messages.fetch(message.id).catch(() => null);
-            if (mensagemCanal) {
-                setTimeout(async () => {
-                    await mensagemCanal.delete().catch(() => {});
-                }, 5000);
+                const logEmbed = new EmbedBuilder()
+                    .setTitle(`Log Staff • ${guild.name.toUpperCase()}`)
+                    .setColor(CONFIG.embedColor)
+                    .setThumbnail(avatarUrl)
+                    .setDescription(`• <@${candidatoId}> ingressou na equipe como **${cargoDesejado}**.`)
+                    .addFields({ name: "ID", value: `${candidatoId || 'N/A'}` })
+                    .setTimestamp();
+
+                const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
+                if (canalResultados) {
+                    await canalResultados.send({ embeds: [logEmbed] }).catch(() => {});
+                }
+
+                const canalStaffLogs = guild.channels.cache.get(CONFIG.canalStaffLogsId);
+                if (canalStaffLogs) {
+                    await canalStaffLogs.send({ embeds: [logEmbed] }).catch(() => {});
+                }
             }
         }
     }
 });
 
 // ==============================================================================
-// 🧊 4. SISTEMA DE RECRUTAMENTO VIA DM (MENSAGEM PRIVADA) 🧊
+// 🧊 4. SISTEMA DE RECRUTAMENTO VIA DM 🧊
 // ==============================================================================
 
 async function iniciarRecrutamentoDM(guild, user, interaction) {
     if (recrutamentoDMSessoes.has(user.id)) {
-        await interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas!\n⚠️ You already have an active application in your **DMs**!`, ephemeral: true });
-        const replyMsg = await interaction.fetchReply();
-        setTimeout(() => {
-            replyMsg.delete().catch(() => {});
-        }, 5000);
+        await interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**!`, ephemeral: true });
         return;
     }
 
     try {
         const dmChannel = await user.createDM();
-        
-        recrutamentoDMSessoes.set(user.id, {
-            passo: 1,
-            nick: '',
-            idade: '',
-            cargo: '',
-            motivo: '',
-            guildId: guild.id
-        });
+        recrutamentoDMSessoes.set(user.id, { passo: 1, nick: '', idade: '', cargo: '', motivo: '', guildId: guild.id });
 
         const inicioEmbed = new EmbedBuilder()
-            .setTitle("🏆 RECRUITMENT FORM (DM) / FORMULÁRIO")
+            .setTitle("🏆 RECRUITMENT FORM (DM)")
             .setColor(CONFIG.embedColor)
-            .setDescription(
-                `Olá! Você iniciou o recrutamento para o servidor **ICE PvP**.\n` +
-                `*Hello! You started your application for the **ICE PvP** server.*\n\n` +
-                `💡 *A qualquer momento, digite **cancelar** ou **stop** para cancelar a ficha.*\n` +
-                `💡 *At any time, type **cancel** or **stop** to cancel your application.*\n\n` +
-                `**Pergunta 1/4 / Question 1/4:**\n` +
-                `Qual o seu **nick no Minecraft**? / *What is your **Minecraft username**?*`
-            );
+            .setDescription("Qual o seu **nick no Minecraft**?");
 
         await dmChannel.send({ embeds: [inicioEmbed] });
-
-        await interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas.\n✅ I've started the application in your **DMs**!`, ephemeral: true });
-        const replyMsg = await interaction.fetchReply();
-        setTimeout(() => {
-            replyMsg.delete().catch(() => {});
-        }, 5000);
+        await interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM**!`, ephemeral: true });
     } catch (error) {
-        console.error("Erro ao enviar DM:", error);
-        await interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true });
-        const replyMsg = await interaction.fetchReply();
-        setTimeout(() => {
-            replyMsg.delete().catch(() => {});
-        }, 5000);
+        await interaction.reply({ content: `❌ Não consegui te enviar DM. Verifique se estão abertas!`, ephemeral: true });
     }
 }
 
@@ -645,16 +441,9 @@ client.on('messageCreate', async (message) => {
     if (!session) return;
 
     const resposta = message.content;
-    const respostaLower = resposta.toLowerCase();
-
-    // Sistema de cancelamento
-    if (respostaLower === 'cancelar' || respostaLower === 'stop') {
+    if (resposta.toLowerCase() === 'cancelar' || resposta.toLowerCase() === 'stop') {
         recrutamentoDMSessoes.delete(message.author.id);
-        const cancelEmbed = new EmbedBuilder()
-            .setTitle("❌ RECRUTAMENTO CANCELADO / CANCELLED")
-            .setColor("#e74c3c")
-            .setDescription("Seu processo de recrutamento foi cancelado com sucesso.\n*Your application process has been successfully cancelled.*");
-        return message.channel.send({ embeds: [cancelEmbed] });
+        return message.channel.send({ embeds: [new EmbedBuilder().setTitle("❌ Cancelado").setColor("#e74c3c")] });
     }
 
     const guild = client.guilds.cache.get(session.guildId);
@@ -662,45 +451,19 @@ client.on('messageCreate', async (message) => {
     if (session.passo === 1) {
         session.nick = resposta;
         session.passo = 2;
-        const embed2 = new EmbedBuilder()
-            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
-            .setColor(CONFIG.embedColor)
-            .setDescription(
-                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
-                `**Pergunta 2/4 / Question 2/4:**\n` +
-                `Qual a sua **idade**? / *What is your **age**?*`
-            );
-        return message.channel.send({ embeds: [embed2] });
+        return message.channel.send({ embeds: [new EmbedBuilder().setTitle("Qual a sua **idade**?").setColor(CONFIG.embedColor)] });
     }
 
     if (session.passo === 2) {
         session.idade = resposta;
         session.passo = 3;
-        const embed3 = new EmbedBuilder()
-            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
-            .setColor(CONFIG.embedColor)
-            .setDescription(
-                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
-                `**Pergunta 3/4 / Question 3/4:**\n` +
-                `Qual **cargo** você deseja? *(Ex: Helper / Staff)*\n` +
-                `*What **role** do you want? (Ex: Helper / Staff)*`
-            );
-        return message.channel.send({ embeds: [embed3] });
+        return message.channel.send({ embeds: [new EmbedBuilder().setTitle("Qual **cargo** você deseja? (Ex: Helper / Staff)").setColor(CONFIG.embedColor)] });
     }
 
     if (session.passo === 3) {
         session.cargo = resposta;
         session.passo = 4;
-        const embed4 = new EmbedBuilder()
-            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
-            .setColor(CONFIG.embedColor)
-            .setDescription(
-                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
-                `**Pergunta 4/4 (Última) / Question 4/4 (Last):**\n` +
-                `Por que nós devemos te escolher? *(Escreva detalhadamente)*\n` +
-                `*Why should we choose you? (Write in detail)*`
-            );
-        return message.channel.send({ embeds: [embed4] });
+        return message.channel.send({ embeds: [new EmbedBuilder().setTitle("Por que nós devemos te escolher?").setColor(CONFIG.embedColor)] });
     }
 
     if (session.passo === 4) {
@@ -708,29 +471,20 @@ client.on('messageCreate', async (message) => {
         
         if (guild) {
             const fichaEmbed = new EmbedBuilder()
-                .setTitle("📋 NOVA FICHA DE RECRUTAMENTO / NEW APPLICATION (DM)")
+                .setTitle("📋 NOVA FICHA DE RECRUTAMENTO")
                 .setColor(CONFIG.embedColor)
                 .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
                 .addFields(
-                    { name: "👤 Candidato / Candidate", value: `<@${message.author.id}> (${message.author.tag})`, inline: false },
-                    { name: "⛏️ Nick no Minecraft / MC Nick", value: session.nick, inline: true },
-                    { name: "📅 Idade / Age", value: session.idade, inline: true },
-                    { name: "🛡️ Cargo Desejado / Desired Role", value: session.cargo, inline: true },
-                    { name: "💬 Por que escolher? / Why choose?", value: session.motivo, inline: false }
-                )
-                .setTimestamp();
+                    { name: "👤 Candidato", value: `<@${message.author.id}>`, inline: false },
+                    { name: "⛏️ Nick no Minecraft", value: session.nick, inline: true },
+                    { name: "📅 Idade", value: session.idade, inline: true },
+                    { name: "🛡️ Cargo Desejado", value: session.cargo, inline: true },
+                    { name: "💬 Por que escolher?", value: session.motivo, inline: false }
+                );
 
             const botoesAnalise = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('btn_aceitar_ficha')
-                    .setLabel('Accept / Aceitar')
-                    .setStyle(ButtonStyle.Success)
-                    .setEmoji('✅'),
-                new ButtonBuilder()
-                    .setCustomId('btn_recusar_ficha')
-                    .setLabel('Deny / Recusar')
-                    .setStyle(ButtonStyle.Danger)
-                    .setEmoji('❌')
+                new ButtonBuilder().setCustomId('btn_aceitar_ficha').setLabel('Aceitar').setStyle(ButtonStyle.Success).setEmoji('✅'),
+                new ButtonBuilder().setCustomId('btn_recusar_ficha').setLabel('Recusar').setStyle(ButtonStyle.Danger).setEmoji('❌')
             );
 
             const canalAnalise = guild.channels.cache.get(CONFIG.canalAnaliseId);
@@ -739,16 +493,7 @@ client.on('messageCreate', async (message) => {
             }
         }
 
-        const fimEmbed = new EmbedBuilder()
-            .setTitle("✅ FICHA ENVIADA COM SUCESSO! / APPLICATION SUBMITTED!")
-            .setColor("#2ecc71")
-            .setDescription(
-                "Suas respostas foram enviadas para a análise da staff do servidor. Obrigado por participar!\n" +
-                "*Your answers have been sent to the staff team for review. Thank you for applying!*"
-            );
-
-        await message.channel.send({ embeds: [fimEmbed] });
-
+        await message.channel.send({ embeds: [new EmbedBuilder().setTitle("✅ Ficha Enviada com Sucesso!").setColor("#2ecc71")] });
         recrutamentoDMSessoes.delete(message.author.id);
     }
 });
