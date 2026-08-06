@@ -182,16 +182,29 @@ client.on('interactionCreate', async (interaction) => {
 
         if (commandName === 'recrutamento') {
             const recruitEmbed = new EmbedBuilder()
-                .setTitle("🏆 RECRUTAMENTO — ICE PVP")
+                .setTitle("Recruitment Process – ICE PVP Team")
                 .setColor(CONFIG.embedColor)
-                .setDescription("Clique no botão abaixo para iniciar o seu formulário na sua **DM (Mensagem Privada)**!");
+                .setDescription(
+                    "**Welcome!**\n" +
+                    "You are starting your application for the **ICE PVP** staff team. Please read the instructions carefully before proceeding.\n\n" +
+                    "**Important Guidelines**\n" +
+                    "• The review process may take up to **7 business days**.\n" +
+                    "• Approved candidates will be contacted via **Discord** (keep your DMs open).\n" +
+                    "• We never ask for **passwords, files, or any kind of sensitive information**.\n\n" +
+                    "**Basic Requirements**\n" +
+                    "• Good communication and writing skills\n" +
+                    "• Respectful attitude both inside and outside the server\n" +
+                    "• Appropriate behavior with the community\n" +
+                    "• Commitment to the team\n\n" +
+                    "📨 Good luck with your application!"
+                )
+                .setImage("https://i.imgur.com/8b94da.jpg"); // Insere a imagem de capa estilo o print
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('btn_iniciar_recrutamento_dm')
-                    .setLabel('Fazer Ficha na DM')
+                    .setLabel('Submit Application')
                     .setStyle(ButtonStyle.Primary)
-                    .setEmoji('📝')
             );
 
             return interaction.reply({ embeds: [recruitEmbed], components: [row] });
@@ -543,7 +556,6 @@ async function iniciarRecrutamentoDM(guild, user, interaction) {
     }
 
     try {
-        // Tenta enviar a primeira mensagem na DM do usuário
         const dmChannel = await user.createDM();
         
         recrutamentoDMSessoes.set(user.id, {
@@ -569,9 +581,7 @@ async function iniciarRecrutamentoDM(guild, user, interaction) {
     }
 }
 
-// Ouvinte para processar as respostas que o usuário mandar na DM do Bot
 client.on('messageCreate', async (message) => {
-    // Apenas mensagens em DM que não sejam de bots
     if (message.author.bot || message.guild) return;
 
     const session = recrutamentoDMSessoes.get(message.author.id);
