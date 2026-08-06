@@ -532,8 +532,8 @@ client.on('interactionCreate', async (interaction) => {
             const updatedEmbed = EmbedBuilder.from(embedOriginal)
                 .setColor(isAceitar ? '#2ecc71' : '#e74c3c')
                 .addFields({ 
-                    name: "📌 Status da Análise", 
-                    value: `${isAceitar ? '✅ Aceito' : '❌ Recusado'} por <@${user.id}>` 
+                    name: "📌 Status / Status", 
+                    value: `${isAceitar ? '✅ Aceito / Accepted' : '❌ Recusado / Denied'} por <@${user.id}>` 
                 });
 
             await interaction.update({ embeds: [updatedEmbed], components: [] });
@@ -552,7 +552,7 @@ client.on('interactionCreate', async (interaction) => {
 
 async function iniciarRecrutamentoDM(guild, user, interaction) {
     if (recrutamentoDMSessoes.has(user.id)) {
-        return interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas com o bot!`, ephemeral: true });
+        return interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas com o bot!\n⚠️ You already have an active application process in your **DMs**!`, ephemeral: true });
     }
 
     try {
@@ -568,16 +568,23 @@ async function iniciarRecrutamentoDM(guild, user, interaction) {
         });
 
         const inicioEmbed = new EmbedBuilder()
-            .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO (DM)")
+            .setTitle("🏆 RECRUITMENT FORM (DM) / FORMULÁRIO")
             .setColor(CONFIG.embedColor)
-            .setDescription(`Olá! Você iniciou o recrutamento para o servidor **${guild.name}**.\n\n**Pergunta 1/4:**\nQual o seu **nick no Minecraft**? *(Responda aqui no chat privado)*`);
+            .setDescription(
+                `Olá! Você iniciou o recrutamento para o servidor **ICE PvP**.\n` +
+                `*Hello! You started your application for the **ICE PvP** server.*\n\n` +
+                `💡 *A qualquer momento, digite **cancelar** ou **stop** para cancelar a ficha.*\n` +
+                `💡 *At any time, type **cancel** or **stop** to cancel your application.*\n\n` +
+                `**Pergunta 1/4 / Question 1/4:**\n` +
+                `Qual o seu **nick no Minecraft**? / *What is your **Minecraft username**?*`
+            );
 
         await dmChannel.send({ embeds: [inicioEmbed] });
 
-        return interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas com o bot.`, ephemeral: true });
+        return interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas com o bot.\n✅ I've started the application in your **DMs**!`, ephemeral: true });
     } catch (error) {
         console.error("Erro ao enviar DM:", error);
-        return interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas (DM) estão abertas para membros do servidor!`, ephemeral: true });
+        return interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas (DM) estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true });
     }
 }
 
@@ -588,15 +595,31 @@ client.on('messageCreate', async (message) => {
     if (!session) return;
 
     const resposta = message.content;
+    const respostaLower = resposta.toLowerCase();
+
+    // Sistema de cancelamento
+    if (respostaLower === 'cancelar' || respostaLower === 'stop') {
+        recrutamentoDMSessoes.delete(message.author.id);
+        const cancelEmbed = new EmbedBuilder()
+            .setTitle("❌ RECRUTAMENTO CANCELADO / CANCELLED")
+            .setColor("#e74c3c")
+            .setDescription("Seu processo de recrutamento foi cancelado com sucesso.\n*Your application process has been successfully cancelled.*");
+        return message.channel.send({ embeds: [cancelEmbed] });
+    }
+
     const guild = client.guilds.cache.get(session.guildId);
 
     if (session.passo === 1) {
         session.nick = resposta;
         session.passo = 2;
         const embed2 = new EmbedBuilder()
-            .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO")
+            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
             .setColor(CONFIG.embedColor)
-            .setDescription(`**Pergunta 2/4:**\nQual a sua **idade**?`);
+            .setDescription(
+                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
+                `**Pergunta 2/4 / Question 2/4:**\n` +
+                `Qual a sua **idade**? / *What is your **age**?*`
+            );
         return message.channel.send({ embeds: [embed2] });
     }
 
@@ -604,9 +627,14 @@ client.on('messageCreate', async (message) => {
         session.idade = resposta;
         session.passo = 3;
         const embed3 = new EmbedBuilder()
-            .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO")
+            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
             .setColor(CONFIG.embedColor)
-            .setDescription(`**Pergunta 3/4:**\nQual **cargo** você deseja? *(Ex: Helper / Staff)*`);
+            .setDescription(
+                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
+                `**Pergunta 3/4 / Question 3/4:**\n` +
+                `Qual **cargo** você deseja? *(Ex: Helper / Staff)*\n` +
+                `*What **role** do you want? (Ex: Helper / Staff)*`
+            );
         return message.channel.send({ embeds: [embed3] });
     }
 
@@ -614,9 +642,14 @@ client.on('messageCreate', async (message) => {
         session.cargo = resposta;
         session.passo = 4;
         const embed4 = new EmbedBuilder()
-            .setTitle("🏆 FORMULÁRIO DE RECRUTAMENTO")
+            .setTitle("🏆 RECRUITMENT FORM / FORMULÁRIO")
             .setColor(CONFIG.embedColor)
-            .setDescription(`**Pergunta 4/4 (Última):**\nPor que nós devemos te escolher? *(Escreva detalhadamente)*`);
+            .setDescription(
+                `💡 *Digite **cancelar** ou **stop** a qualquer momento para sair.*\n\n` +
+                `**Pergunta 4/4 (Última) / Question 4/4 (Last):**\n` +
+                `Por que nós devemos te escolher? *(Escreva detalhadamente)*\n` +
+                `*Why should we choose you? (Write in detail)*`
+            );
         return message.channel.send({ embeds: [embed4] });
     }
 
@@ -625,27 +658,27 @@ client.on('messageCreate', async (message) => {
         
         if (guild) {
             const fichaEmbed = new EmbedBuilder()
-                .setTitle("📋 NOVA FICHA DE RECRUTAMENTO (VIA DM)")
+                .setTitle("📋 NOVA FICHA DE RECRUTAMENTO / NEW APPLICATION (DM)")
                 .setColor(CONFIG.embedColor)
                 .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
                 .addFields(
-                    { name: "👤 Candidato", value: `<@${message.author.id}> (${message.author.tag})`, inline: false },
-                    { name: "⛏️ Nick no Minecraft", value: session.nick, inline: true },
-                    { name: "📅 Idade", value: session.idade, inline: true },
-                    { name: "🛡️ Cargo Desejado", value: session.cargo, inline: true },
-                    { name: "💬 Por que escolher?", value: session.motivo, inline: false }
+                    { name: "👤 Candidato / Candidate", value: `<@${message.author.id}> (${message.author.tag})`, inline: false },
+                    { name: "⛏️ Nick no Minecraft / MC Nick", value: session.nick, inline: true },
+                    { name: "📅 Idade / Age", value: session.idade, inline: true },
+                    { name: "🛡️ Cargo Desejado / Desired Role", value: session.cargo, inline: true },
+                    { name: "💬 Por que escolher? / Why choose?", value: session.motivo, inline: false }
                 )
                 .setTimestamp();
 
             const botoesAnalise = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('btn_aceitar_ficha')
-                    .setLabel('Aceitar')
+                    .setLabel('Accept / Aceitar')
                     .setStyle(ButtonStyle.Success)
                     .setEmoji('✅'),
                 new ButtonBuilder()
                     .setCustomId('btn_recusar_ficha')
-                    .setLabel('Recusar')
+                    .setLabel('Deny / Recusar')
                     .setStyle(ButtonStyle.Danger)
                     .setEmoji('❌')
             );
@@ -657,9 +690,12 @@ client.on('messageCreate', async (message) => {
         }
 
         const fimEmbed = new EmbedBuilder()
-            .setTitle("✅ FICHA ENVIADA COM SUCESSO!")
+            .setTitle("✅ FICHA ENVIADA COM SUCESSO! / APPLICATION SUBMITTED!")
             .setColor("#2ecc71")
-            .setDescription("Suas respostas foram enviadas para a análise da staff do servidor. Obrigado por participar!");
+            .setDescription(
+                "Suas respostas foram enviadas para a análise da staff do servidor. Obrigado por participar!\n" +
+                "*Your answers have been sent to the staff team for review. Thank you for applying!*"
+            );
 
         await message.channel.send({ embeds: [fimEmbed] });
 
