@@ -563,18 +563,21 @@ client.on('interactionCreate', async (interaction) => {
                 }
             }
 
-            // Atualiza a mensagem na hora para remover os botões e mostrar o status
+            // Atualiza a mensagem na interface para tirar os botões e mostrar o veredito
             await interaction.update({ embeds: [updatedEmbed], components: [] });
 
-            // Deleta essa mensagem do canal de análise após 5 segundos
-            setTimeout(() => {
-                message.delete().catch(() => {});
-            }, 5000);
-
-            // Envia a cópia para o canal de resultados fixo
+            // Envia a cópia oficial para o canal de resultados fixo
             const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
             if (canalResultados) {
                 await canalResultados.send({ embeds: [updatedEmbed] }).catch(() => {});
+            }
+
+            // Pega a mensagem atualizada do canal de análise e apaga após 5 segundos reais
+            const mensagemCanal = await interaction.channel.messages.fetch(message.id).catch(() => null);
+            if (mensagemCanal) {
+                setTimeout(async () => {
+                    await mensagemCanal.delete().catch(() => {});
+                }, 5000);
             }
         }
     }
