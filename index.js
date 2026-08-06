@@ -198,7 +198,7 @@ client.on('interactionCreate', async (interaction) => {
                     "• Commitment to the team\n\n" +
                     "📨 Good luck with your application!"
                 )
-                .setImage("https://i.imgur.com/8b94da.jpg"); // Insere a imagem de capa estilo o print
+                .setImage(guild.iconURL({ dynamic: true }));
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
