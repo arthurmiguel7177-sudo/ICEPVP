@@ -536,6 +536,33 @@ client.on('interactionCreate', async (interaction) => {
                     value: `${isAceitar ? '✅ Aceito / Accepted' : '❌ Recusado / Denied'} por <@${user.id}>` 
                 });
 
+            // Extrai o ID do candidato da própria ficha enviada no canal de análise
+            const campoCandidato = embedOriginal.fields.find(f => f.name.includes("Candidato"));
+            if (campoCandidato) {
+                const matchId = campoCandidato.value.match(/<@!?(\d+)>/);
+                if (matchId) {
+                    const candidatoId = matchId[1];
+                    try {
+                        const candidatoUser = await client.users.fetch(candidatoId);
+                        const dmCandidato = await candidatoUser.createDM();
+                        
+                        const dmResultadoEmbed = new EmbedBuilder()
+                            .setTitle(isAceitar ? "🎉 FICHA APROVADA! / APPLICATION ACCEPTED!" : "❌ FICHA RECUSADA / APPLICATION DENIED")
+                            .setColor(isAceitar ? '#2ecc71' : '#e74c3c')
+                            .setDescription(
+                                isAceitar 
+                                ? `Parabéns! Sua ficha de recrutamento para o **${guild.name}** foi **ACEITA** por <@${user.id}>!\n*Congratulations! Your application for **${guild.name}** has been **ACCEPTED**!*`
+                                : `Olá. Infelizmente sua ficha de recrutamento para o **${guild.name}** foi **RECUSADA** por <@${user.id}>.\n*Hello. Unfortunately your application for **${guild.name}** has been **DENIED**.*`
+                            )
+                            .setTimestamp();
+
+                        await dmCandidato.send({ embeds: [dmResultadoEmbed] });
+                    } catch (err) {
+                        console.log("Não foi possível enviar a DM do resultado para o candidato (DM fechada).");
+                    }
+                }
+            }
+
             await interaction.update({ embeds: [updatedEmbed], components: [] });
 
             const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
@@ -552,7 +579,12 @@ client.on('interactionCreate', async (interaction) => {
 
 async function iniciarRecrutamentoDM(guild, user, interaction) {
     if (recrutamentoDMSessoes.has(user.id)) {
-        return interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas com o bot!\n⚠️ You already have an active application process in your **DMs**!`, ephemeral: true });
+        // Envia a mensagem efêmera avisando e configura para deletar em 5 segundos
+        const replyMsg = await interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas!\n⚠️ You already have an active application in your **DMs**!`, ephemeral: true, fetchReply: true });
+        setTimeout(() => {
+            interaction.deleteReply().catch(() => {});
+        }, 5000);
+        return;
     }
 
     try {
@@ -581,10 +613,17 @@ async function iniciarRecrutamentoDM(guild, user, interaction) {
 
         await dmChannel.send({ embeds: [inicioEmbed] });
 
-        return interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas com o bot.\n✅ I've started the application in your **DMs**!`, ephemeral: true });
+        // Envia a mensagem de confirmação e deleta em 5 segundos
+        const replyMsg = await interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas.\n✅ I've started the application in your **DMs**!`, ephemeral: true, fetchReply: true });
+        setTimeout(() => {
+            interaction.deleteReply().catch(() => {});
+        }, 5000);
     } catch (error) {
         console.error("Erro ao enviar DM:", error);
-        return interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas (DM) estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true });
+        const replyMsg = await interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true, fetchReply: true });
+        setTimeout(() => {
+            interaction.deleteReply().catch(() => {});
+        }, 5000);
     }
 }
 
