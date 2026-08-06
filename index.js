@@ -563,7 +563,15 @@ client.on('interactionCreate', async (interaction) => {
                 }
             }
 
-            await interaction.update({ embeds: [updatedEmbed], components: [] });
+            // CORREÇÃO: Usamos interaction.reply + setTimeout para apagar a mensagem pública de "Ficha Aceita/Recusada" em 5 segundos, evitando poluição.
+            await interaction.reply({ embeds: [updatedEmbed], ephemeral: false });
+            const replyMessage = await interaction.fetchReply();
+            setTimeout(() => {
+                replyMessage.delete().catch(() => {});
+            }, 5000);
+
+            // Deleta a mensagem com os botões no canal de análise para limpar
+            await message.delete().catch(() => {});
 
             const canalResultados = guild.channels.cache.get(CONFIG.canalResultadosId);
             if (canalResultados) {
@@ -579,10 +587,10 @@ client.on('interactionCreate', async (interaction) => {
 
 async function iniciarRecrutamentoDM(guild, user, interaction) {
     if (recrutamentoDMSessoes.has(user.id)) {
-        // Envia a mensagem efêmera avisando e configura para deletar em 5 segundos
-        const replyMsg = await interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas!\n⚠️ You already have an active application in your **DMs**!`, ephemeral: true, fetchReply: true });
+        await interaction.reply({ content: `⚠️ Você já tem um processo de recrutamento ativo na sua **DM**. Verifique suas mensagens privadas!\n⚠️ You already have an active application in your **DMs**!`, ephemeral: true });
+        const replyMsg = await interaction.fetchReply();
         setTimeout(() => {
-            interaction.deleteReply().catch(() => {});
+            replyMsg.delete().catch(() => {});
         }, 5000);
         return;
     }
@@ -613,16 +621,17 @@ async function iniciarRecrutamentoDM(guild, user, interaction) {
 
         await dmChannel.send({ embeds: [inicioEmbed] });
 
-        // Envia a mensagem de confirmação e deleta em 5 segundos
-        const replyMsg = await interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas.\n✅ I've started the application in your **DMs**!`, ephemeral: true, fetchReply: true });
+        await interaction.reply({ content: `✅ Iniciei o recrutamento na sua **DM (Mensagem Privada)**! Verifique suas conversas.\n✅ I've started the application in your **DMs**!`, ephemeral: true });
+        const replyMsg = await interaction.fetchReply();
         setTimeout(() => {
-            interaction.deleteReply().catch(() => {});
+            replyMsg.delete().catch(() => {});
         }, 5000);
     } catch (error) {
         console.error("Erro ao enviar DM:", error);
-        const replyMsg = await interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true, fetchReply: true });
+        await interaction.reply({ content: `❌ Não consegui te enviar uma mensagem na DM. Verifique se suas mensagens diretas estão abertas!\n❌ Could not send you a DM. Please check if your DMs are open!`, ephemeral: true });
+        const replyMsg = await interaction.fetchReply();
         setTimeout(() => {
-            interaction.deleteReply().catch(() => {});
+            replyMsg.delete().catch(() => {});
         }, 5000);
     }
 }
