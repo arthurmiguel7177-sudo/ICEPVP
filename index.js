@@ -19,7 +19,6 @@ const {
     ButtonBuilder, 
     ButtonStyle, 
     PermissionFlagsBits, 
-    ChannelType,
     REST,
     Routes,
     SlashCommandBuilder
@@ -53,8 +52,11 @@ const CONFIG = {
     embedColor: "#00f0ff",
     serverIP: "icepvp.mcsh.io",
     vipRoleId: "1522775069938679929",
-    helperRoleId: "1528097766872715296",
+    // IDs de cargos da Staff atualizados
+    ownerRoleId: "1522330147632582787",
     managerRoleId: "1528098256125431908",
+    adminRoleId: "1522329826642497629",
+    helperRoleId: "1528097766872715296",
     staffRoleId: "1522329690658836541",
     canalAnaliseId: "1533565153872838846",
     canalResultadosId: "1533563483726151724",
@@ -70,7 +72,7 @@ const recrutamentoDMSessoes = new Map();
 
 const commands = [
     new SlashCommandBuilder().setName('regras').setDescription('Exibe o regulamento completo do servidor ICE PVP'),
-    new SlashCommandBuilder().setName('staf').setDescription('Exibe a lista de membros da Staff do servidor'),
+    new SlashCommandBuilder().setName('staf').setDescription('Exibe a lista de membros da Staff do servidor estilo PvP Hard'),
     new SlashCommandBuilder().setName('equipe').setDescription('Mostra os membros da equipe e quem está ativo no momento'),
     new SlashCommandBuilder().setName('vips').setDescription('Mostra a quantidade e a lista de membros com o cargo VIP'),
     new SlashCommandBuilder().setName('ip').setDescription('Mostra o IP oficial do ICE PVP'),
@@ -163,7 +165,7 @@ client.on('interactionCreate', async (interaction) => {
                     "• Commitment to the team\n\n" +
                     "📨 Good luck with your application!"
                 )
-                .setImage("https://media.discordapp.net/attachments/1187483758362628178/1200000000000000000/ice_cube.png"); // Ou utilize a URL da imagem desejada para o cubo
+                .setImage("https://media.discordapp.net/attachments/1187483758362628178/1200000000000000000/ice_cube.png");
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
@@ -177,30 +179,59 @@ client.on('interactionCreate', async (interaction) => {
         if (commandName === 'staf') {
             await interaction.deferReply();
             try {
-                const getMembersByRoleName = (roleName) => {
-                    const role = guild.roles.cache.find(r => r.name.toLowerCase() === roleName.toLowerCase());
+                const getMembersByRoleId = (roleId) => {
+                    const role = guild.roles.cache.get(roleId);
                     if (!role) return "*(Cargo não encontrado)*";
-                    const members = role.members.map(m => `<@${m.user.id}>`);
-                    return members.length > 0 ? members.join(', ') : "*(Nenhum membro)*";
+                    const members = role.members.map(m => `• <@${m.user.id}>`);
+                    return members.length > 0 ? members.join('\n') : "*(Nenhum membro)*";
                 };
 
+                const getRoleCount = (roleId) => {
+                    const role = guild.roles.cache.get(roleId);
+                    return role ? role.members.size : 0;
+                };
+
+                const totalOwners = getRoleCount(CONFIG.ownerRoleId);
+                const totalManagers = getRoleCount(CONFIG.managerRoleId);
+                const totalAdmins = getRoleCount(CONFIG.adminRoleId);
+                const totalHelpers = getRoleCount(CONFIG.helperRoleId);
+                const totalStaff = getRoleCount(CONFIG.staffRoleId);
+                
+                const totalGeralStaff = totalOwners + totalManagers + totalAdmins + totalHelpers + totalStaff;
+
                 const staffEmbed = new EmbedBuilder()
-                    .setTitle("👑 EQUIPE DE STAFF — ICE PVP")
                     .setColor(CONFIG.embedColor)
-                    .addFields(
-                        { name: "👑 Owners", value: getMembersByRoleName("Owners"), inline: false },
-                        { name: "🛡️ Co-Owner", value: getMembersByRoleName("Co-Owner"), inline: false },
-                        { name: "⭐ Admins", value: getMembersByRoleName("Admins"), inline: false }
-                    );
-                return await interaction.editReply({ embeds: [staffEmbed] });
+                    .setImage("attachment://team.png") // Utiliza a imagem enviada (team.png)
+                    .setTitle("ICE PVP | Staff Team")
+                    .setDescription(
+                        `**Owner (${totalOwners})**\n${getMembersByRoleId(CONFIG.ownerRoleId)}\n\n` +
+                        `**Manager (${totalManagers})**\n${getMembersByRoleId(CONFIG.managerRoleId)}\n\n` +
+                        `**Admin (${totalAdmins})**\n${getMembersByRoleId(CONFIG.adminRoleId)}\n\n` +
+                        `**Helper (${totalHelpers})**\n${getMembersByRoleId(CONFIG.helperRoleId)}\n\n` +
+                        `**Staff (${totalStaff})**\n${getMembersByRoleId(CONFIG.staffRoleId)}`
+                    )
+                    .setFooter({ text: `Updated on ${new Date().toLocaleDateString()} · Total: ${totalGeralStaff} members` })
+                    .setTimestamp();
+
+                // Caso queira anexar o arquivo local "team.png" diretamente na mensagem do embed:
+                // Certifique-se de ter o arquivo team.png na mesma pasta do bot ou altere para URL do imgur se preferir.
+                return await interaction.editReply({ 
+                    embeds: [staffEmbed], 
+                    files: ['./team.png'] 
+                }).catch(async () => {
+                    // Fallback caso a imagem local não seja encontrada, enviando sem o arquivo local
+                    staffEmbed.setImage(null);
+                    return await interaction.editReply({ embeds: [staffEmbed] });
+                });
             } catch (err) {
+                console.error(err);
                 return interaction.editReply({ content: "❌ Erro ao listar a Staff." });
             }
         }
 
         if (commandName === 'equipe') {
             await interaction.deferReply();
-            const role = guild.roles.cache.get(CONFIG.staffRoleId) || guild.roles.cache.find(r => r.name.toLowerCase() === 'staff');
+            const role = guild.roles.cache.get(CONFIG.staffRoleId);
             if (!role) return interaction.editReply('Cargo não encontrado.');
 
             const onlineStaff = [];
@@ -476,7 +507,7 @@ client.on('messageCreate', async (message) => {
 
     if (session.passo === 2) {
         session.idade = resposta;
-        session.passo = 3;
+        session.passo === 3;
         const p3Embed = new EmbedBuilder()
             .setColor(CONFIG.embedColor)
             .setDescription(
